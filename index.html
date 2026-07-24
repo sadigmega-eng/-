@@ -54,6 +54,35 @@
             text-align: center;
             padding: 20px 0;
         }
+        /* أزرار اللغة */
+        .lang-switch {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .lang-btn {
+            padding: 8px 28px;
+            border: 2px solid #d1d9e6;
+            background: white;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            transition: 0.3s;
+            color: #4a5a72;
+        }
+        .lang-btn:hover {
+            border-color: #2b7de9;
+            color: #2b7de9;
+        }
+        .lang-btn.active {
+            background: #2b7de9;
+            border-color: #2b7de9;
+            color: white;
+            box-shadow: 0 4px 15px rgba(43, 125, 233, 0.3);
+        }
         #welcomeScreen h1 {
             font-size: 32px;
             color: #1a2b4a;
@@ -327,6 +356,7 @@
             .question-text { font-size: 19px; }
             .tf-group label { padding: 12px; }
             .result-score { font-size: 50px; }
+            .lang-btn { padding: 6px 18px; font-size: 15px; }
         }
     </style>
 </head>
@@ -335,13 +365,18 @@
 <div class="container" id="appContainer">
     <!-- ===== شاشة الترحيب ===== -->
     <div id="welcomeScreen" class="screen active">
-        <h1>🧠 اختبار التواصل الفعّال</h1>
-        <p>اختبر مهاراتك في التواصل والاستماع النشط<br>أجب على 20 سؤالاً، كل سؤال لديك <strong>30 ثانية</strong> فقط!</p>
+        <!-- أزرار تبديل اللغة -->
+        <div class="lang-switch">
+            <button class="lang-btn active" id="langAr" onclick="setLanguage('ar')">🇸🇦 عربي</button>
+            <button class="lang-btn" id="langEn" onclick="setLanguage('en')">🇬🇧 English</button>
+        </div>
+        <h1 id="welcomeTitle">🧠 اختبار التواصل الفعّال</h1>
+        <p id="welcomeSub">اختبر مهاراتك في التواصل والاستماع النشط<br>أجب على 20 سؤالاً، كل سؤال لديك 30 ثانية فقط!</p>
         <div class="input-group">
             <input type="text" id="userName" placeholder="✏️ الاسم الكامل" />
             <input type="text" id="userPlace" placeholder="🏷️ اسم الفريق" />
         </div>
-        <button class="btn-start" onclick="startQuiz()">🚀 ابدأ الاختبار</button>
+        <button class="btn-start" id="startBtn" onclick="startQuiz()">🚀 ابدأ الاختبار</button>
     </div>
 
     <!-- ===== شاشة الأسئلة ===== -->
@@ -369,149 +404,227 @@
         <div class="result-score" id="resultScore">0%</div>
         <div class="result-feedback" id="resultFeedback">نتيجة رائعة!</div>
         <div class="result-details" id="resultDetails"></div>
-        <button class="btn-restart" onclick="restartQuiz()">🔄 إعادة الاختبار</button>
+        <button class="btn-restart" id="restartBtn" onclick="restartQuiz()">🔄 إعادة الاختبار</button>
     </div>
 </div>
 
 <script>
     // ============================================================
-    //  بيانات الأسئلة (20 سؤالاً)
+    //  بيانات الأسئلة (ثنائية اللغة)
     // ============================================================
     const questions = [
         // 1-10 اختيار من متعدد
         {
-            type: 'mcq',
-            question: 'خلال اجتماع، قال أحد أعضاء الفريق: "هذه الفكرة لن تنجح إطلاقًا." لاحظت أن بقية الفريق صمتوا، ولم يعد أحد يشارك. ما الخطوة الأولى الأكثر فاعلية؟',
-            options: ['أ) الدفاع عن الفكرة.', 'ب) تجاهل التعليق.', 'ج) سؤال المعترض عن الأسباب وطلب بدائل مع تشجيع بقية الفريق على المشاركة.', 'د) الانتقال مباشرة إلى الموضوع التالي.'],
+            ar: { q: 'خلال اجتماع، قال أحد أعضاء الفريق: "هذه الفكرة لن تنجح إطلاقًا." لاحظت أن بقية الفريق صمتوا، ولم يعد أحد يشارك. ما الخطوة الأولى الأكثر فاعلية؟', opts: ['أ) الدفاع عن الفكرة.', 'ب) تجاهل التعليق.', 'ج) سؤال المعترض عن الأسباب وطلب بدائل مع تشجيع بقية الفريق على المشاركة.', 'د) الانتقال مباشرة إلى الموضوع التالي.'] },
+            en: { q: 'During a meeting, a team member said: "This idea will never work." You notice the rest of the team falls silent. What is the most effective first step?', opts: ['a) Defend the idea.', 'b) Ignore the comment.', 'c) Ask the objector for reasons and alternatives while encouraging others to participate.', 'd) Move to the next topic.'] },
             correct: 2
         },
         {
-            type: 'mcq',
-            question: 'أثناء التدريب، أحد المشاركين يجيب عن جميع الأسئلة قبل الآخرين. بعد مرور 20 دقيقة بدأ المشاركون الآخرون في الانسحاب من النقاش. ما الخطأ الذي ارتكبه المدرب؟',
-            options: ['أ) أعطى معلومات كثيرة.', 'ب) لم يدير ديناميكية المجموعة بشكل متوازن.', 'ج) استخدم وسائل عرض كثيرة.', 'د) طرح أسئلة مفتوحة.'],
+            ar: { q: 'أثناء التدريب، أحد المشاركين يجيب عن جميع الأسئلة قبل الآخرين. بعد مرور 20 دقيقة بدأ المشاركون الآخرون في الانسحاب من النقاش. ما الخطأ الذي ارتكبه المدرب؟', opts: ['أ) أعطى معلومات كثيرة.', 'ب) لم يدير ديناميكية المجموعة بشكل متوازن.', 'ج) استخدم وسائل عرض كثيرة.', 'د) طرح أسئلة مفتوحة.'] },
+            en: { q: 'During training, one participant answers all questions before others. After 20 minutes, others start withdrawing from the discussion. What mistake did the trainer make?', opts: ['a) Gave too much information.', 'b) Didn\'t balance group dynamics.', 'c) Used too many presentation tools.', 'd) Asked open-ended questions.'] },
             correct: 1
         },
         {
-            type: 'mcq',
-            question: 'قال المدير: "أحتاج التقرير بسرعة." الموظف أرسله الساعة الرابعة عصرًا. المدير كان يقصده خلال ساعة. أي عنصر فشل؟',
-            options: ['أ) الرسالة.', 'ب) التغذية الراجعة.', 'ج) تحديد التوقعات.', 'د) المرسل.'],
+            ar: { q: 'قال المدير: "أحتاج التقرير بسرعة." الموظف أرسله الساعة الرابعة عصرًا. المدير كان يقصده خلال ساعة. أي عنصر فشل؟', opts: ['أ) الرسالة.', 'ب) التغذية الراجعة.', 'ج) تحديد التوقعات.', 'د) المرسل.'] },
+            en: { q: 'Manager said: "I need the report quickly." Employee sent it at 4 PM. Manager meant within an hour. Which element failed?', opts: ['a) The message.', 'b) Feedback.', 'c) Setting expectations.', 'd) The sender.'] },
             correct: 2
         },
         {
-            type: 'mcq',
-            question: 'أحد المستفيدين يقول: "أنا بخير." لكنه: يتجنب التواصل البصري، يتحدث بصوت منخفض، يبدو متوترًا. ما التصرف المهني؟',
-            options: ['أ) افتراض أنه يكذب.', 'ب) الاعتماد على لغة الجسد فقط.', 'ج) ملاحظة التناقض وطرح أسئلة استكشافية دون إصدار أحكام.', 'د) إنهاء المقابلة.'],
+            ar: { q: 'أحد المستفيدين يقول: "أنا بخير." لكنه: يتجنب التواصل البصري، يتحدث بصوت منخفض، يبدو متوترًا. ما التصرف المهني؟', opts: ['أ) افتراض أنه يكذب.', 'ب) الاعتماد على لغة الجسد فقط.', 'ج) ملاحظة التناقض وطرح أسئلة استكشافية دون إصدار أحكام.', 'د) إنهاء المقابلة.'] },
+            en: { q: 'A beneficiary says: "I\'m fine." But they avoid eye contact, speak softly, and seem tense. What is the professional action?', opts: ['a) Assume they are lying.', 'b) Rely only on body language.', 'c) Note the contradiction and ask exploratory questions without judgment.', 'd) End the interview.'] },
             correct: 2
         },
         {
-            type: 'mcq',
-            question: 'خلال احدى الجلسات، لاحظت أن ثلاثة مشاركين عقدوا أذرعهم في الوقت نفسه. ما أفضل استنتاج؟',
-            options: ['أ) جميعهم يرفضون الفكرة.', 'ب) جميعهم غاضبون.', 'ج) لا يمكن تفسير الإشارة بمعزل عن السياق.', 'د) يريدون إنهاء الاجتماع.'],
+            ar: { q: 'خلال احدى الجلسات، لاحظت أن ثلاثة مشاركين عقدوا أذرعهم في الوقت نفسه. ما أفضل استنتاج؟', opts: ['أ) جميعهم يرفضون الفكرة.', 'ب) جميعهم غاضبون.', 'ج) لا يمكن تفسير الإشارة بمعزل عن السياق.', 'د) يريدون إنهاء الاجتماع.'] },
+            en: { q: 'During a session, you notice three participants crossed their arms at the same time. What is the best conclusion?', opts: ['a) They all reject the idea.', 'b) They are all angry.', 'c) The gesture cannot be interpreted without context.', 'd) They want to end the meeting.'] },
             correct: 2
         },
         {
-            type: 'mcq',
-            question: 'أثناء جلسة عصف ذهني، بدأ أحد المشاركين يهاجم الأشخاص بدلًا من الأفكار. ما التصرف الأكثر احترافية؟',
-            options: ['أ) الرد عليه بنفس الأسلوب.', 'ب) تجاهل الهجوم.', 'ج) إعادة توجيه النقاش إلى الأفكار مع وضع حدود واضحة للحوار.', 'د) إنهاء الاجتماع فورًا.'],
+            ar: { q: 'أثناء جلسة عصف ذهني، بدأ أحد المشاركين يهاجم الأشخاص بدلًا من الأفكار. ما التصرف الأكثر احترافية؟', opts: ['أ) الرد عليه بنفس الأسلوب.', 'ب) تجاهل الهجوم.', 'ج) إعادة توجيه النقاش إلى الأفكار مع وضع حدود واضحة للحوار.', 'د) إنهاء الاجتماع فورًا.'] },
+            en: { q: 'During a brainstorming session, a participant starts attacking people instead of ideas. What is the most professional response?', opts: ['a) Respond in the same manner.', 'b) Ignore the attack.', 'c) Redirect the discussion to ideas while setting clear boundaries.', 'd) End the meeting immediately.'] },
             correct: 2
         },
         {
-            type: 'mcq',
-            question: 'أي العبارات التالية تعكس استماعًا نشطًا؟',
-            options: ['أ) "أنا فاهم."', 'ب) "تقصد أن سبب المشكلة هو ضغط الوقت، هل فهمت بشكل صحيح؟"', 'ج) "لا، أنت مخطئ."', 'د) "دعني أشرح لك."'],
+            ar: { q: 'أي العبارات التالية تعكس استماعًا نشطًا؟', opts: ['أ) "أنا فاهم."', 'ب) "تقصد أن سبب المشكلة هو ضغط الوقت، هل فهمت بشكل صحيح؟"', 'ج) "لا، أنت مخطئ."', 'د) "دعني أشرح لك."'] },
+            en: { q: 'Which statement reflects active listening?', opts: ['a) "I understand."', 'b) "You mean the problem is time pressure, did I understand correctly?"', 'c) "No, you are wrong."', 'd) "Let me explain to you."'] },
             correct: 1
         },
         {
-            type: 'mcq',
-            question: 'في أي موقف تكون إعادة الصياغة غير مناسبة؟',
-            options: ['أ) عند التأكد من الفهم.', 'ب) عند وجود سوء فهم.', 'ج) عندما يكون المطلوب اتخاذ قرار عاجل دون الحاجة لتوضيح إضافي.', 'د) أثناء جلسة إرشاد.'],
+            ar: { q: 'في أي موقف تكون إعادة الصياغة غير مناسبة؟', opts: ['أ) عند التأكد من الفهم.', 'ب) عند وجود سوء فهم.', 'ج) عندما يكون المطلوب اتخاذ قرار عاجل دون الحاجة لتوضيح إضافي.', 'د) أثناء جلسة إرشاد.'] },
+            en: { q: 'In which situation is paraphrasing inappropriate?', opts: ['a) When confirming understanding.', 'b) When there is misunderstanding.', 'c) When an urgent decision is needed without further clarification.', 'd) During a counseling session.'] },
             correct: 2
         },
         {
-            type: 'mcq',
-            question: 'أي السلوكيات التالية تُضعف الثقة أكثر؟',
-            options: ['أ) الحديث بسرعة.', 'ب) استخدام مصطلحات صعبة.', 'ج) تعارض لغة الجسد مع الرسالة المنطوقة.', 'د) كثرة الأمثلة.'],
+            ar: { q: 'أي السلوكيات التالية تُضعف الثقة أكثر؟', opts: ['أ) الحديث بسرعة.', 'ب) استخدام مصطلحات صعبة.', 'ج) تعارض لغة الجسد مع الرسالة المنطوقة.', 'د) كثرة الأمثلة.'] },
+            en: { q: 'Which behavior undermines trust the most?', opts: ['a) Speaking fast.', 'b) Using difficult terminology.', 'c) Body language contradicting the spoken message.', 'd) Using too many examples.'] },
             correct: 2
         },
         {
-            type: 'mcq',
-            question: 'إذا كنت تيسر ورشة توعوية وظهر شخص مسيطر، فما الهدف الأول لتدخلك؟',
-            options: ['أ) إيقافه.', 'ب) تقليل مشاركته.', 'ج) ضمان مشاركة جميع أعضاء الفريق دون إقصاء أحد.', 'د) إنهاء الاجتماع.'],
+            ar: { q: 'إذا كنت تيسر ورشة توعوية وظهر شخص مسيطر، فما الهدف الأول لتدخلك؟', opts: ['أ) إيقافه.', 'ب) تقليل مشاركته.', 'ج) ضمان مشاركة جميع أعضاء الفريق دون إقصاء أحد.', 'د) إنهاء الاجتماع.'] },
+            en: { q: 'If you are facilitating a workshop and a dominant person appears, what is the primary goal of your intervention?', opts: ['a) Stop them.', 'b) Reduce their participation.', 'c) Ensure all team members participate without exclusion.', 'd) End the meeting.'] },
             correct: 2
         },
         // 11-20 صح / خطأ
         {
-            type: 'tf',
-            question: 'إذا كانت لغة الجسد تتعارض مع الكلمات، فمن الأفضل دائمًا تصديق لغة الجسد.',
+            ar: { q: 'إذا كانت لغة الجسد تتعارض مع الكلمات، فمن الأفضل دائمًا تصديق لغة الجسد.' },
+            en: { q: 'If body language contradicts words, it is always better to trust body language.' },
             correct: false
         },
         {
-            type: 'tf',
-            question: 'الاستماع الفعّال يعني الصمت حتى ينتهي المتحدث من الكلام.',
+            ar: { q: 'الاستماع الفعّال يعني الصمت حتى ينتهي المتحدث من الكلام.' },
+            en: { q: 'Active listening means silence until the speaker finishes speaking.' },
             correct: false
         },
         {
-            type: 'tf',
-            question: 'يمكن أن تكون الرسالة واضحة للمرسل، لكنها تُفهم بطريقة مختلفة من المستقبل.',
+            ar: { q: 'يمكن أن تكون الرسالة واضحة للمرسل، لكنها تُفهم بطريقة مختلفة من المستقبل.' },
+            en: { q: 'A message clear to the sender can be understood differently by the receiver.' },
             correct: true
         },
         {
-            type: 'tf',
-            question: 'التغذية الراجعة تُستخدم فقط لتصحيح الأخطاء.',
+            ar: { q: 'التغذية الراجعة تُستخدم فقط لتصحيح الأخطاء.' },
+            en: { q: 'Feedback is only used to correct mistakes.' },
             correct: false
         },
         {
-            type: 'tf',
-            question: 'الاختلاف في الخلفية الثقافية قد يؤدي إلى سوء فهم حتى عند استخدام الكلمات نفسها.',
+            ar: { q: 'الاختلاف في الخلفية الثقافية قد يؤدي إلى سوء فهم حتى عند استخدام الكلمات نفسها.' },
+            en: { q: 'Differences in cultural background can lead to misunderstandings even when using the same words.' },
             correct: true
         },
         {
-            type: 'tf',
-            question: 'الشخص كثير الكلام يجب مقاطعته مباشرة حتى لا يضيع وقت الاجتماع.',
+            ar: { q: 'الشخص كثير الكلام يجب مقاطعته مباشرة حتى لا يضيع وقت الاجتماع.' },
+            en: { q: 'A talkative person should be interrupted directly to save meeting time.' },
             correct: false
         },
         {
-            type: 'tf',
-            question: 'إعادة صياغة كلام المتحدث تعني تكرار كلماته حرفيًا.',
+            ar: { q: 'إعادة صياغة كلام المتحدث تعني تكرار كلماته حرفيًا.' },
+            en: { q: 'Paraphrasing the speaker\'s words means repeating them verbatim.' },
             correct: false
         },
         {
-            type: 'tf',
-            question: 'الهدف من التواصل الفعّال هو أن يقتنع الطرف الآخر دائمًا برأيك.',
+            ar: { q: 'الهدف من التواصل الفعّال هو أن يقتنع الطرف الآخر دائمًا برأيك.' },
+            en: { q: 'The goal of effective communication is to always convince the other party of your opinion.' },
             correct: false
         },
         {
-            type: 'tf',
-            question: 'يمكن للمدرب أن يغيّر سلوك المشاركين من خلال أسلوب تواصله حتى لو لم يغيّر شخصياتهم.',
+            ar: { q: 'يمكن للمدرب أن يغيّر سلوك المشاركين من خلال أسلوب تواصله حتى لو لم يغيّر شخصياتهم.' },
+            en: { q: 'A trainer can change participants\' behavior through their communication style even without changing their personalities.' },
             correct: true
         },
         {
-            type: 'tf',
-            question: 'إذا لم يطلب المستمع توضيحًا، فهذا يعني أنه فهم الرسالة بشكل صحيح.',
+            ar: { q: 'إذا لم يطلب المستمع توضيحًا، فهذا يعني أنه فهم الرسالة بشكل صحيح.' },
+            en: { q: 'If the listener doesn\'t ask for clarification, it means they understood the message correctly.' },
             correct: false
         }
     ];
 
     // ============================================================
+    //  الترجمة (نصوص الواجهة)
+    // ============================================================
+    const translations = {
+        ar: {
+            title: '🧠 اختبار التواصل الفعّال',
+            subtitle: 'اختبر مهاراتك في التواصل والاستماع النشط<br>أجب على 20 سؤالاً، كل سؤال لديك 30 ثانية فقط!',
+            namePlaceholder: '✏️ الاسم الكامل',
+            teamPlaceholder: '🏷️ اسم الفريق',
+            startBtn: '🚀 ابدأ الاختبار',
+            userLabel: '👤',
+            teamLabel: '🏷️',
+            resultFrom: 'من فريق',
+            resultCorrect: 'أجبت بشكل صحيح على',
+            resultOutOf: 'من أصل',
+            resultHigh: 'ممتاز! مستوى تواصلك رائع، استمر في التميز!',
+            resultLow: 'لا بأس! هذه فرصة رائعة للتعلم والتطوير، واصل القراءة والممارسة!',
+            restartBtn: '🔄 إعادة الاختبار',
+            trueLabel: '✅ صح',
+            falseLabel: '❌ خطأ',
+            questionPrefix: 'سؤال'
+        },
+        en: {
+            title: '🧠 Effective Communication Test',
+            subtitle: 'Test your communication and active listening skills.<br>Answer 20 questions, you have only 30 seconds per question!',
+            namePlaceholder: '✏️ Full Name',
+            teamPlaceholder: '🏷️ Team Name',
+            startBtn: '🚀 Start Test',
+            userLabel: '👤',
+            teamLabel: '🏷️',
+            resultFrom: 'from team',
+            resultCorrect: 'You answered correctly on',
+            resultOutOf: 'out of',
+            resultHigh: 'Excellent! Your communication level is great, keep it up!',
+            resultLow: 'It\'s okay! This is a great opportunity to learn and develop, keep reading and practicing!',
+            restartBtn: '🔄 Retake Test',
+            trueLabel: '✅ True',
+            falseLabel: '❌ False',
+            questionPrefix: 'Question'
+        }
+    };
+
+    // ============================================================
     //  متغيرات التحكم
     // ============================================================
+    let currentLang = 'ar';
     let currentIndex = 0;
     let score = 0;
     let timerInterval = null;
     let timeLeft = 30;
-    const TOTAL_TIME = 30;  // <--- تم التعديل من 20 إلى 30
+    const TOTAL_TIME = 30;
     let userName = '';
     let userPlace = '';
     let isAnswered = false;
 
     // ============================================================
-    //  دوال التحكم
+    //  دوال اللغة
+    // ============================================================
+    function setLanguage(lang) {
+        currentLang = lang;
+        // تحديث شكل الأزرار
+        document.getElementById('langAr').classList.toggle('active', lang === 'ar');
+        document.getElementById('langEn').classList.toggle('active', lang === 'en');
+        
+        // تحديث اتجاه النص (RTL/LTR)
+        const container = document.querySelector('.container');
+        if (lang === 'ar') {
+            container.style.direction = 'rtl';
+            document.documentElement.dir = 'rtl';
+        } else {
+            container.style.direction = 'ltr';
+            document.documentElement.dir = 'ltr';
+        }
+        
+        // تحديث النصوص
+        updateWelcomeTexts();
+    }
+
+    function updateWelcomeTexts() {
+        const t = translations[currentLang];
+        document.getElementById('welcomeTitle').textContent = t.title;
+        document.getElementById('welcomeSub').innerHTML = t.subtitle;
+        document.getElementById('userName').placeholder = t.namePlaceholder;
+        document.getElementById('userPlace').placeholder = t.teamPlaceholder;
+        document.getElementById('startBtn').textContent = t.startBtn;
+        document.getElementById('restartBtn').textContent = t.restartBtn;
+        
+        // تحديث اسم المستخدم والفريق إذا كانا موجودين
+        if (userName) {
+            updateUserInfoDisplay();
+        }
+    }
+
+    function updateUserInfoDisplay() {
+        const t = translations[currentLang];
+        const name = userName || (currentLang === 'ar' ? 'ضيف' : 'Guest');
+        const place = userPlace || (currentLang === 'ar' ? 'غير محدد' : 'Not specified');
+        document.getElementById('displayUserInfo').textContent = `${t.userLabel} ${name} | ${t.teamLabel} ${place}`;
+    }
+
+    // ============================================================
+    //  دوال التحكم الرئيسية
     // ============================================================
     function startQuiz() {
-        userName = document.getElementById('userName').value.trim() || 'ضيف';
-        userPlace = document.getElementById('userPlace').value.trim() || 'غير محدد';
+        userName = document.getElementById('userName').value.trim() || (currentLang === 'ar' ? 'ضيف' : 'Guest');
+        userPlace = document.getElementById('userPlace').value.trim() || (currentLang === 'ar' ? 'غير محدد' : 'Not specified');
         
-        document.getElementById('displayUserInfo').textContent = `👤 ${userName} | 🏷️ ${userPlace}`;
+        updateUserInfoDisplay();
         
         document.getElementById('welcomeScreen').classList.remove('active');
         document.getElementById('quizScreen').classList.add('active');
@@ -529,17 +642,45 @@
 
         isAnswered = false;
         const q = questions[currentIndex];
+        const langData = q[currentLang];
+        const total = questions.length;
         
-        document.getElementById('qNumber').textContent = `${currentIndex + 1} / ${questions.length}`;
-        document.getElementById('qText').textContent = q.question;
+        const t = translations[currentLang];
+        document.getElementById('qNumber').textContent = `${t.questionPrefix} ${currentIndex + 1} / ${total}`;
+        document.getElementById('qText').textContent = langData.q;
         
         const container = document.getElementById('optionsContainer');
         container.innerHTML = '';
         
-        if (q.type === 'mcq') {
+        if (q.correct === true || q.correct === false) { // True/False
+            const tfDiv = document.createElement('div');
+            tfDiv.className = 'tf-group';
+            
+            const trueLabel = document.createElement('label');
+            const trueRadio = document.createElement('input');
+            trueRadio.type = 'radio';
+            trueRadio.name = 'question';
+            trueRadio.value = 'true';
+            trueRadio.onclick = () => selectAnswer(true);
+            trueLabel.appendChild(trueRadio);
+            trueLabel.appendChild(document.createTextNode(t.trueLabel));
+            
+            const falseLabel = document.createElement('label');
+            const falseRadio = document.createElement('input');
+            falseRadio.type = 'radio';
+            falseRadio.name = 'question';
+            falseRadio.value = 'false';
+            falseRadio.onclick = () => selectAnswer(false);
+            falseLabel.appendChild(falseRadio);
+            falseLabel.appendChild(document.createTextNode(t.falseLabel));
+            
+            tfDiv.appendChild(trueLabel);
+            tfDiv.appendChild(falseLabel);
+            container.appendChild(tfDiv);
+        } else { // MCQ
             const grid = document.createElement('div');
             grid.className = 'options-grid';
-            q.options.forEach((opt, idx) => {
+            langData.opts.forEach((opt, idx) => {
                 const label = document.createElement('label');
                 const radio = document.createElement('input');
                 radio.type = 'radio';
@@ -551,31 +692,6 @@
                 grid.appendChild(label);
             });
             container.appendChild(grid);
-        } else {
-            const tfDiv = document.createElement('div');
-            tfDiv.className = 'tf-group';
-            
-            const trueLabel = document.createElement('label');
-            const trueRadio = document.createElement('input');
-            trueRadio.type = 'radio';
-            trueRadio.name = 'question';
-            trueRadio.value = 'true';
-            trueRadio.onclick = () => selectAnswer(true);
-            trueLabel.appendChild(trueRadio);
-            trueLabel.appendChild(document.createTextNode('✅ صح'));
-            
-            const falseLabel = document.createElement('label');
-            const falseRadio = document.createElement('input');
-            falseRadio.type = 'radio';
-            falseRadio.name = 'question';
-            falseRadio.value = 'false';
-            falseRadio.onclick = () => selectAnswer(false);
-            falseLabel.appendChild(falseRadio);
-            falseLabel.appendChild(document.createTextNode('❌ خطأ'));
-            
-            tfDiv.appendChild(trueLabel);
-            tfDiv.appendChild(falseLabel);
-            container.appendChild(tfDiv);
         }
         
         startTimer();
@@ -624,7 +740,7 @@
         const q = questions[currentIndex];
         let isCorrect = false;
         
-        if (q.type === 'mcq') {
+        if (typeof q.correct === 'boolean') {
             isCorrect = (selectedValue === q.correct);
         } else {
             isCorrect = (selectedValue === q.correct);
@@ -648,12 +764,13 @@
         
         const total = questions.length;
         const percentage = Math.round((score / total) * 100);
-        const name = userName || 'ضيف';
-        const place = userPlace || 'غير محدد';
+        const t = translations[currentLang];
+        const name = userName || (currentLang === 'ar' ? 'ضيف' : 'Guest');
+        const place = userPlace || (currentLang === 'ar' ? 'غير محدد' : 'Not specified');
         
-        document.getElementById('resultName').textContent = `👋 ${name} من فريق ${place}`;  // <-- تم التعديل
+        document.getElementById('resultName').textContent = `👋 ${name} ${t.resultFrom} ${place}`;
         document.getElementById('resultScore').textContent = `${percentage}%`;
-        document.getElementById('resultDetails').textContent = `أجبت بشكل صحيح على ${score} من أصل ${total} سؤال.`;
+        document.getElementById('resultDetails').textContent = `${t.resultCorrect} ${score} ${t.resultOutOf} ${total} ${currentLang === 'ar' ? 'سؤال' : 'questions'}.`;
         
         const icon = document.getElementById('resultIcon');
         const feedback = document.getElementById('resultFeedback');
@@ -664,12 +781,12 @@
         if (percentage >= 50) {
             container.classList.add('celebrate');
             icon.textContent = '🎉🏆🎊';
-            feedback.textContent = 'ممتاز! مستوى تواصلك رائع، استمر في التميز!';
+            feedback.textContent = t.resultHigh;
             launchConfetti();
         } else {
             container.classList.add('encourage');
             icon.textContent = '💪📚😊';
-            feedback.textContent = 'لا بأس! هذه فرصة رائعة للتعلم والتطوير، واصل القراءة والممارسة!';
+            feedback.textContent = t.resultLow;
         }
     }
 
@@ -709,15 +826,26 @@
         document.getElementById('welcomeScreen').classList.add('active');
         document.getElementById('appContainer').classList.remove('celebrate', 'encourage');
         document.querySelectorAll('.confetti-container').forEach(el => el.remove());
+        
+        // إعادة تعيين المدخلات مع الاحتفاظ بالاسم والفريق
         document.getElementById('userName').value = userName;
         document.getElementById('userPlace').value = userPlace;
+        
         currentIndex = 0;
         score = 0;
         isAnswered = false;
+        
+        // تحديث نصوص الترحيب حسب اللغة الحالية
+        updateWelcomeTexts();
     }
 
+    // ============================================================
+    //  بدء التشغيل
+    // ============================================================
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('welcomeScreen').classList.add('active');
+        // ضبط اللغة الافتراضية (العربية)
+        setLanguage('ar');
     });
 </script>
 </body>
