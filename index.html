@@ -283,7 +283,7 @@
             border-radius: 12px;
         }
         .btn-restart {
-            margin-top: 25px;
+            margin-top: 15px;
             background: #1a2b4a;
             color: white;
             border: none;
@@ -298,6 +298,34 @@
         .btn-restart:hover {
             background: #0b1a33;
             transform: scale(1.03);
+        }
+        /* زر مشاركة واتساب */
+        .btn-share {
+            margin-top: 15px;
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 14px 35px;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: 700;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-share:hover {
+            background: #1ebe5c;
+            transform: scale(1.03);
+        }
+        .share-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
         }
 
         /* حالات النتيجة */
@@ -357,6 +385,8 @@
             .tf-group label { padding: 12px; }
             .result-score { font-size: 50px; }
             .lang-btn { padding: 6px 18px; font-size: 15px; }
+            .btn-share, .btn-restart { padding: 12px 20px; font-size: 17px; width: 100%; }
+            .share-container { width: 100%; }
         }
     </style>
 </head>
@@ -404,7 +434,10 @@
         <div class="result-score" id="resultScore">0%</div>
         <div class="result-feedback" id="resultFeedback">نتيجة رائعة!</div>
         <div class="result-details" id="resultDetails"></div>
-        <button class="btn-restart" id="restartBtn" onclick="restartQuiz()">🔄 إعادة الاختبار</button>
+        <div class="share-container">
+            <button class="btn-share" id="shareBtn" onclick="shareOnWhatsApp()">💬 مشاركة على واتساب</button>
+            <button class="btn-restart" id="restartBtn" onclick="restartQuiz()">🔄 إعادة الاختبار</button>
+        </div>
     </div>
 </div>
 
@@ -535,9 +568,12 @@
             resultHigh: 'ممتاز! مستوى تواصلك رائع، استمر في التميز!',
             resultLow: 'لا بأس! هذه فرصة رائعة للتعلم والتطوير، واصل القراءة والممارسة!',
             restartBtn: '🔄 إعادة الاختبار',
+            shareBtn: '💬 مشاركة على واتساب',
             trueLabel: '✅ صح',
             falseLabel: '❌ خطأ',
-            questionPrefix: 'سؤال'
+            questionPrefix: 'سؤال',
+            shareTextHigh: '🎉 حققت نسبة {percentage}% في اختبار مهارات التواصل! ({correct}/{total}) أنا {name} من فريق {team}. اختبر نفسك الآن!',
+            shareTextLow: '💪 حصلت على {percentage}% في اختبار مهارات التواصل ({correct}/{total}). أنا {name} من فريق {team}. جرب الاختبار وطور مهاراتك!'
         },
         en: {
             title: '🧠 Effective Communication Test',
@@ -553,9 +589,12 @@
             resultHigh: 'Excellent! Your communication level is great, keep it up!',
             resultLow: 'It\'s okay! This is a great opportunity to learn and develop, keep reading and practicing!',
             restartBtn: '🔄 Retake Test',
+            shareBtn: '💬 Share on WhatsApp',
             trueLabel: '✅ True',
             falseLabel: '❌ False',
-            questionPrefix: 'Question'
+            questionPrefix: 'Question',
+            shareTextHigh: '🎉 I scored {percentage}% in the Effective Communication Test! ({correct}/{total}) I\'m {name} from team {team}. Take the test now!',
+            shareTextLow: '💪 I got {percentage}% in the Effective Communication Test ({correct}/{total}). I\'m {name} from team {team}. Try the test and improve your skills!'
         }
     };
 
@@ -577,11 +616,9 @@
     // ============================================================
     function setLanguage(lang) {
         currentLang = lang;
-        // تحديث شكل الأزرار
         document.getElementById('langAr').classList.toggle('active', lang === 'ar');
         document.getElementById('langEn').classList.toggle('active', lang === 'en');
         
-        // تحديث اتجاه النص (RTL/LTR)
         const container = document.querySelector('.container');
         if (lang === 'ar') {
             container.style.direction = 'rtl';
@@ -591,7 +628,6 @@
             document.documentElement.dir = 'ltr';
         }
         
-        // تحديث النصوص
         updateWelcomeTexts();
     }
 
@@ -603,8 +639,8 @@
         document.getElementById('userPlace').placeholder = t.teamPlaceholder;
         document.getElementById('startBtn').textContent = t.startBtn;
         document.getElementById('restartBtn').textContent = t.restartBtn;
+        document.getElementById('shareBtn').textContent = t.shareBtn;
         
-        // تحديث اسم المستخدم والفريق إذا كانا موجودين
         if (userName) {
             updateUserInfoDisplay();
         }
@@ -652,7 +688,7 @@
         const container = document.getElementById('optionsContainer');
         container.innerHTML = '';
         
-        if (q.correct === true || q.correct === false) { // True/False
+        if (q.correct === true || q.correct === false) {
             const tfDiv = document.createElement('div');
             tfDiv.className = 'tf-group';
             
@@ -677,7 +713,7 @@
             tfDiv.appendChild(trueLabel);
             tfDiv.appendChild(falseLabel);
             container.appendChild(tfDiv);
-        } else { // MCQ
+        } else {
             const grid = document.createElement('div');
             grid.className = 'options-grid';
             langData.opts.forEach((opt, idx) => {
@@ -791,6 +827,46 @@
     }
 
     // ============================================================
+    //  مشاركة على واتساب 🆕
+    // ============================================================
+    function shareOnWhatsApp() {
+        const total = questions.length;
+        const percentage = Math.round((score / total) * 100);
+        const t = translations[currentLang];
+        const name = userName || (currentLang === 'ar' ? 'ضيف' : 'Guest');
+        const place = userPlace || (currentLang === 'ar' ? 'غير محدد' : 'Not specified');
+        
+        // اختيار النص المناسب حسب النتيجة
+        let shareText;
+        if (percentage >= 50) {
+            shareText = t.shareTextHigh
+                .replace('{percentage}', percentage)
+                .replace('{correct}', score)
+                .replace('{total}', total)
+                .replace('{name}', name)
+                .replace('{team}', place);
+        } else {
+            shareText = t.shareTextLow
+                .replace('{percentage}', percentage)
+                .replace('{correct}', score)
+                .replace('{total}', total)
+                .replace('{name}', name)
+                .replace('{team}', place);
+        }
+        
+        // إضافة رابط الاختبار (رابط الموقع الحالي)
+        const url = window.location.href;
+        const fullMessage = `${shareText}\n\n🔗 رابط الاختبار: ${url}`;
+        
+        // ترميز النص لاستخدامه في رابط واتساب
+        const encodedMessage = encodeURIComponent(fullMessage);
+        const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+        
+        // فتح رابط واتساب في نافذة جديدة
+        window.open(whatsappUrl, '_blank');
+    }
+
+    // ============================================================
     //  كونفيتي
     // ============================================================
     function launchConfetti() {
@@ -827,7 +903,6 @@
         document.getElementById('appContainer').classList.remove('celebrate', 'encourage');
         document.querySelectorAll('.confetti-container').forEach(el => el.remove());
         
-        // إعادة تعيين المدخلات مع الاحتفاظ بالاسم والفريق
         document.getElementById('userName').value = userName;
         document.getElementById('userPlace').value = userPlace;
         
@@ -835,7 +910,6 @@
         score = 0;
         isAnswered = false;
         
-        // تحديث نصوص الترحيب حسب اللغة الحالية
         updateWelcomeTexts();
     }
 
@@ -844,7 +918,6 @@
     // ============================================================
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('welcomeScreen').classList.add('active');
-        // ضبط اللغة الافتراضية (العربية)
         setLanguage('ar');
     });
 </script>
